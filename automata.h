@@ -29,7 +29,7 @@ struct AFN {
 };
 
 struct AFD {
-    // El indice es el ID; el contenido es el subconjunto del AFN
+    // El indice es el ID el contenido es el subconjunto del AFN
     // Por ejemplo: estados[0] = {0,1}, estados[1] = {2}
     std::vector<ConjuntoEstados> estados;
     std::set<char> alfabeto;

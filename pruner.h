@@ -51,6 +51,6 @@ bool aceptaCadena(const AFD& afd, const std::string& entrada);
 bool lenguajeEquivalente(const AFD& a, const AFD& b,
                          const std::vector<std::string>& muestras);
 
-}  // namespace automata
+}
 
-#endif  // PRUNER_H
+#endif

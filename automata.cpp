@@ -7,7 +7,7 @@
 namespace automata {
 namespace {
 
-// Escrib {0,1,2}; un conjunto vacio se muestra como {}.
+// Escriba {0,1,2}; un conjunto vacio se muestra como {}.
 void imprimirConjunto(std::ostream& salida, const ConjuntoEstados& conjunto) {
     salida << '{';
     // Esta bandera evita imprimir una coma antes del primer elemento

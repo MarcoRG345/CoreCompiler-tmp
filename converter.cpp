@@ -2,70 +2,66 @@
 #include "operations.h"
 
 #include <queue>
+#include <stdexcept>
 
 namespace automata {
 
-namespace {
-
-// Un subconjunto del AFN es final en el AFD si contiene al menos
-// un estado final del AFN.
-bool esFinal(const ConjuntoEstados& subconjunto, const ConjuntoEstados& finalesAFN) {
-    for (int estado : subconjunto) {
-        if (finalesAFN.count(estado)) return true;
-    }
-    return false;
-}
-
-}
-
 AFD convertirAFNaAFD(const AFN& afn) {
     AFD afd;
+
     afd.alfabeto = afn.alfabeto;
 
-    // Sin estado inicial no hay conversion posible: AFD vacio.
+    // sin inicial no hay conversion posible, se rechaza en vez de devolver vacio
     if (afn.inicial == -1) {
-        return afd;
+        throw std::invalid_argument("El AFN no tiene estado inicial");
     }
 
-    // Subconjunto inicial: clausura epsilon del inicial del AFN.
-    const ConjuntoEstados subconjuntoInicial = epsilonClosure(afn, afn.inicial);
-    afd.inicial = afd.agregarEstado(subconjuntoInicial);
-    if (esFinal(subconjuntoInicial, afn.finales)) {
-        afd.finales.insert(afd.inicial);
-    }
+    // subconjunto inicial, clausura epsilon del inicial del afn
+    ConjuntoEstados inicial;
+    inicial.insert(afn.inicial);
+    inicial = epsilonClosure(afn, inicial);
 
-    // BFS sobre los subconjuntos descubiertos.
+    afd.agregarEstado(inicial);
+    afd.inicial = 0;
+
+    // bfs sobre los subconjuntos descubiertos
     std::queue<int> pendientes;
-    pendientes.push(afd.inicial);
+    pendientes.push(0);
 
     while (!pendientes.empty()) {
-        const int idOrigen = pendientes.front();
+        int idActual = pendientes.front();
         pendientes.pop();
-        const ConjuntoEstados subconjuntoOrigen = afd.estados[idOrigen];
 
-        for (char simbolo : afn.alfabeto) {
-            const ConjuntoEstados movidos = move(afn, subconjuntoOrigen, simbolo);
+        const ConjuntoEstados conjuntoActual = afd.estados[idActual];
 
-            // Sin destinos: celda parcial del AFD (destino == -1).
+        for (char simbolo : afd.alfabeto) {
+            ConjuntoEstados movidos = move(afn, conjuntoActual, simbolo);
+
+            // sin destinos, transicion parcial, no se agrega nada
             if (movidos.empty()) {
                 continue;
             }
 
-            const ConjuntoEstados subconjuntoDestino = epsilonClosure(afn, movidos);
+            ConjuntoEstados siguiente = epsilonClosure(afn, movidos);
 
-            // Detectamos si el subconjunto ya existia ANTES de agregarlo.
-            const bool yaExistia = (afd.buscarEstado(subconjuntoDestino) != -1);
-            const int idDestino = afd.agregarEstado(subconjuntoDestino);
+            int idSiguiente = afd.buscarEstado(siguiente);
 
-            afd.agregarTransicion(idOrigen, simbolo, idDestino);
-
-            if (esFinal(subconjuntoDestino, afn.finales)) {
-                afd.finales.insert(idDestino);
+            // solo se encola si el subconjunto es nuevo
+            if (idSiguiente == -1) {
+                idSiguiente = afd.agregarEstado(siguiente);
+                pendientes.push(idSiguiente);
             }
 
-            // Solo encolamos subconjuntos nuevos para explorarlos.
-            if (!yaExistia) {
-                pendientes.push(idDestino);
+            afd.agregarTransicion(idActual, simbolo, idSiguiente);
+        }
+    }
+
+    // un estado del afd es final si su subconjunto contiene algun final del afn
+    for (int i = 0; i < static_cast<int>(afd.estados.size()); ++i) {
+        for (int estadoAFN : afd.estados[i]) {
+            if (afn.finales.count(estadoAFN)) {
+                afd.finales.insert(i);
+                break;
             }
         }
     }
@@ -73,4 +69,4 @@ AFD convertirAFNaAFD(const AFN& afn) {
     return afd;
 }
 
-}  // namespace automata
+}
